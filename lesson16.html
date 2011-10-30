@@ -449,7 +449,7 @@
 		  var vertexShader = getShader(gl, vertexShaderId);
 		  var fragmentShader = getShader(gl, fragmentShaderId);
 		  
-		  var shaderProgram = gl.createProgram();
+		  /*var shaderProgram = gl.createProgram();
 		  gl.attachShader(shaderProgram, vertexShader.obj);
 		  gl.attachShader(shaderProgram, fragmentShader.obj);
 		  gl.linkProgram(shaderProgram);
@@ -458,28 +458,31 @@
 		    alert("Could not initialize shaders");
 		  }
 		  
-		  gl.useProgram(shaderProgram);
+		  gl.useProgram(shaderProgram);*/
 		  
-		  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+		  shaderProgram = engine.shaderProgramFactory.create([vertexShader,fragmentShader]); 
+		  
+		  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram.obj, "aVertexPosition");
 		  gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 		  
-		  shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+		  shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram.obj, "aVertexNormal");
 		  gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 		  
-		  shaderProgram.vertexTexCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+		  shaderProgram.vertexTexCoordAttribute = gl.getAttribLocation(shaderProgram.obj, "aTextureCoord");
 		  gl.enableVertexAttribArray(shaderProgram.vertexTexCoordAttribute);
 		  
-		  shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-		  shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-		  shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-			shaderProgram.wMatrixUniform = gl.getUniformLocation(shaderProgram, "uWMatrix");
-		  shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
-			shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
-		  shaderProgram.pointLightingLocationUniform = gl.getUniformLocation(shaderProgram, "uPointLightingLocation");
-		  shaderProgram.pointLightingColorUniform = gl.getUniformLocation(shaderProgram, "uPointLightingColor");
-		  shaderProgram.texturing = gl.getUniformLocation(shaderProgram, "uUseTextures");
-			
-			return shaderProgram;
+		  /*shaderProgram.uniforms = {};
+		  shaderProgram.uniforms.uPMatrix = gl.getUniformLocation(shaderProgram.obj, "uPMatrix");
+		  shaderProgram.uniforms.uMVMatrix = gl.getUniformLocation(shaderProgram.obj, "uMVMatrix");
+		  shaderProgram.uniforms.uNMatrix = gl.getUniformLocation(shaderProgram.obj, "uNMatrix");
+		  shaderProgram.uniforms.uWMatrix = gl.getUniformLocation(shaderProgram.obj, "uWMatrix");
+		  shaderProgram.uniforms.uSampler = gl.getUniformLocation(shaderProgram.obj, "uSampler");
+		  shaderProgram.uniforms.uAmbientColor = gl.getUniformLocation(shaderProgram.obj, "uAmbientColor");
+		  shaderProgram.uniforms.uPointLightingLocation = gl.getUniformLocation(shaderProgram.obj, "uPointLightingLocation");
+		  shaderProgram.uniforms.uPointLightingColor = gl.getUniformLocation(shaderProgram.obj, "uPointLightingColor");
+		  shaderProgram.uniforms.uUseTextures = gl.getUniformLocation(shaderProgram.obj, "uUseTextures");
+				*/
+		  return shaderProgram;
 		}	
 				
 		var mouseDown = false;
@@ -562,14 +565,14 @@
 		}
 
 		function setMatrixUniforms() {
-		  gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-		  gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-			gl.uniformMatrix4fv(shaderProgram.wMatrixUniform, false, wMatrix);
+		  gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
+		  gl.uniformMatrix4fv(shaderProgram.uniforms.uMVMatrix, false, mvMatrix);
+		  gl.uniformMatrix4fv(shaderProgram.uniforms.uWMatrix, false, wMatrix);
 			
 			var normalMatrix = mat3.create();
 		  mat4.toInverseMat3(mvMatrix, normalMatrix);
 		  mat3.transpose(normalMatrix);
-		  gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+		  gl.uniformMatrix3fv(shaderProgram.uniforms.uNMatrix, false, normalMatrix);
 		}
 		
 		function drawModel(vertexBuffer, vertexIndexBuffer, texture) {
@@ -579,10 +582,10 @@
 			if (texture) {
 				gl.activeTexture(gl.TEXTURE0);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
-				gl.uniform1i(shaderProgram.samplerUniform, 0);		  
-				gl.uniform1i(shaderProgram.texturing, true);
+				gl.uniform1i(shaderProgram.uniforms.uSampler, 0);		  
+				gl.uniform1i(shaderProgram.uniforms.uUseTextures, true);
 			} else {
-				gl.uniform1i(shaderProgram.texturing, false);	
+				gl.uniform1i(shaderProgram.uniforms.uUseTextures, false);	
 			}
 			
 		  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -606,9 +609,9 @@
 			mat4.translate(mvMatrix, [0.0, 0.0, -20.0]);
 		  wMatrix = mat4.create(mvMatrix);
 			
-			gl.uniform3f(shaderProgram.ambientColorUniform, 0.1,0.1,0.1);
-			gl.uniform3f(shaderProgram.pointLightingLocationUniform, 0.0, 0.0, 0.0);
-			gl.uniform3f(shaderProgram.pointLightingColorUniform, 1.0,1.0,1.0);
+			gl.uniform3f(shaderProgram.uniforms.uAmbientColor, 0.1,0.1,0.1);
+			gl.uniform3f(shaderProgram.uniforms.uPointLightingLocation, 0.0, 0.0, 0.0);
+			gl.uniform3fv(shaderProgram.uniforms.uPointLightingColor, [1.0,1.0,1.0]);
 			
 			// draw cube
 			mvPushMatrix();
@@ -630,7 +633,7 @@
 		}
 		
 	function drawScene() {
-		gl.useProgram(shaderProgram);
+		shaderProgram.use();
 		
 		gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
 		drawSceneOnLaptopScreen();
@@ -649,21 +652,21 @@
 		
 	  wMatrix = mat4.create(mvMatrix);
 			
-		gl.uniform3f(shaderProgram.ambientColorUniform, 0.1,0.1,0.1);
-		gl.uniform3f(shaderProgram.pointLightingLocationUniform, 0.0, 0.0, 20.0);
-		gl.uniform3f(shaderProgram.pointLightingColorUniform, 1.0,1.0,1.0);
+		gl.uniform3f(shaderProgram.uniforms.uAmbientColor, 0.1,0.1,0.1);
+		gl.uniform3f(shaderProgram.uniforms.uPointLightingLocation, 0.0, 0.0, 20.0);
+		gl.uniform3fv(shaderProgram.uniforms.uPointLightingColor, [1.0,1.0,1.0]);
 		
 		drawModel(laptopVertexBuffer, laptopVertexIndexBuffer, null);
 		
-		gl.uniform3f(shaderProgram.ambientColorUniform, 0.3,0.3,0.3);
-		gl.uniform3f(shaderProgram.pointLightingLocationUniform, 0.0, 0.0, 0.0);
-		gl.uniform3f(shaderProgram.pointLightingColorUniform, 1.0,1.0,1.0);
+		gl.uniform3f(shaderProgram.uniforms.uAmbientColor, 0.3,0.3,0.3);
+		gl.uniform3f(shaderProgram.uniforms.uPointLightingLocation, 0.0, 0.0, 0.0);
+		gl.uniform3fv(shaderProgram.uniforms.uPointLightingColor, [1.0,1.0,1.0]);
 		
 		//drawModel(laptopScreenVertexBuffer, laptopScreenVertexIndexBuffer, moonTexture);
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-		gl.uniform1i(shaderProgram.samplerUniform, 0);		  
-		gl.uniform1i(shaderProgram.texturing, true);
+		gl.uniform1i(shaderProgram.uniforms.uSampler, 0);		  
+		gl.uniform1i(shaderProgram.uniforms.uUseTextures, true);
 		gl.bindBuffer(gl.ARRAY_BUFFER, laptopScreenVertexBuffer);
 		gl.vertexAttribPointer(shaderProgram.vertexTexCoordAttribute, 2, gl.FLOAT, false, laptopScreenVertexBuffer.itemSize*Float32Array.BYTES_PER_ELEMENT,3*Float32Array.BYTES_PER_ELEMENT);
 		gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, laptopScreenVertexBuffer.itemSize*Float32Array.BYTES_PER_ELEMENT,5*Float32Array.BYTES_PER_ELEMENT);
