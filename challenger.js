@@ -51,19 +51,23 @@ function ShaderProgram(title, shaders) {
 	
 	// link program
 	this.obj = gl.createProgram();
-	for (var i = 0; i < shaders.length(); i++)	
+	for (var i = 0; i < shaders.length; i++)	
 		gl.attachShader(this.obj, shaders[i].obj);
 	gl.linkProgram(this.obj);
 	
-	if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+	if (!gl.getProgramParameter(this.obj, gl.LINK_STATUS)) {
 		alert("Could not initialize shaders");
 		return
 	}
 	
+	this.use();
+	
 	// get uniforms locations
 	this.uniforms = {};
-	for (var shader in shaders) {
-		for (var parameter in shader.parameters) {
+	for (var i = 0; i < shaders.length; i++) {
+		var shader = shaders[i];
+		for (var p = 0; p < shader.parameters.length; p++) { 
+			var parameter = shader.parameters[p];
 			this.uniforms[parameter.name] = gl.getUniformLocation(this.obj, parameter.name);
 		}
 	}
@@ -76,7 +80,7 @@ function ShaderProgram(title, shaders) {
 function ShaderProgramFactory() {
 	function fullName(shaders) {
 		var name = "";
-		for (var i = 0; i < shaders.length(); i++)
+		for (var i = 0; i < shaders.length; i++)
 			name += shaders[i].name + "|";
 		return name;
 	}
