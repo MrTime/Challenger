@@ -448,18 +448,7 @@
 		function createProgram(vertexShaderId, fragmentShaderId) {
 		  var vertexShader = getShader(gl, vertexShaderId);
 		  var fragmentShader = getShader(gl, fragmentShaderId);
-		  
-		  /*var shaderProgram = gl.createProgram();
-		  gl.attachShader(shaderProgram, vertexShader.obj);
-		  gl.attachShader(shaderProgram, fragmentShader.obj);
-		  gl.linkProgram(shaderProgram);
-		  
-		  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-		    alert("Could not initialize shaders");
-		  }
-		  
-		  gl.useProgram(shaderProgram);*/
-		  
+		  		  
 		  shaderProgram = engine.shaderProgramFactory.create([vertexShader,fragmentShader]); 
 		  
 		  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram.obj, "aVertexPosition");
@@ -471,17 +460,6 @@
 		  shaderProgram.vertexTexCoordAttribute = gl.getAttribLocation(shaderProgram.obj, "aTextureCoord");
 		  gl.enableVertexAttribArray(shaderProgram.vertexTexCoordAttribute);
 		  
-		  /*shaderProgram.uniforms = {};
-		  shaderProgram.uniforms.uPMatrix = gl.getUniformLocation(shaderProgram.obj, "uPMatrix");
-		  shaderProgram.uniforms.uMVMatrix = gl.getUniformLocation(shaderProgram.obj, "uMVMatrix");
-		  shaderProgram.uniforms.uNMatrix = gl.getUniformLocation(shaderProgram.obj, "uNMatrix");
-		  shaderProgram.uniforms.uWMatrix = gl.getUniformLocation(shaderProgram.obj, "uWMatrix");
-		  shaderProgram.uniforms.uSampler = gl.getUniformLocation(shaderProgram.obj, "uSampler");
-		  shaderProgram.uniforms.uAmbientColor = gl.getUniformLocation(shaderProgram.obj, "uAmbientColor");
-		  shaderProgram.uniforms.uPointLightingLocation = gl.getUniformLocation(shaderProgram.obj, "uPointLightingLocation");
-		  shaderProgram.uniforms.uPointLightingColor = gl.getUniformLocation(shaderProgram.obj, "uPointLightingColor");
-		  shaderProgram.uniforms.uUseTextures = gl.getUniformLocation(shaderProgram.obj, "uUseTextures");
-				*/
 		  return shaderProgram;
 		}	
 				
