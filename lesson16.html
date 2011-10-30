@@ -6,29 +6,71 @@
 	<script type="text/javascript" src="webgl-utils.js"></script>
 	<script type="text/javascript" src="challenger.js"></script>
 	
-	<script id="per-vertex-lighting-fs" type="x-shader/x-fragment">
+	<script id="mesh-vs" type="x-shader/x-vertex">
+	  attribute vec3 aVertexPosition;
+    
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    
+    void material_vertex_main(in vec4 viewPosition);
+    
+    void main(void) {
+        vec4 viewPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        gl_Position = uPMatrix * viewPosition;
+        
+        material_vertex_main(viewPosition);
+		}  
+	</script>
+	
+	<script id="mesh-fs" type="x-shader/x-fragment">
 	  #ifdef GL_ES
     precision highp float;
     #endif
- 
+	  
+	  void material_fragment_main();
+	
+	  void main(void) {
+        material_fragment_main();
+		}  
+	</script>
+	
+	<script id="material-vs" type="x-shader/x-vertex">
+	  attribute vec2 aTextureCoord;
+	  
+	  varying vec4 vPosition;
     varying vec2 vTextureCoord;
-    varying vec3 vLightWeighting;
- 
-    uniform sampler2D uSampler;
- 
-    void main(void) {
-        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
-        gl_FragColor = vec4(textureColor.rgb * vLightWeighting, textureColor.a);
+    
+    void light_vertex_main(in vec4 vPosition);
+    
+	  void material_vertex_main(in vec4 viewPosition) { 
+      vTextureCoord = aTextureCoord;
+      vPosition = viewPosition;
+      
+      light_vertex_main(vPosition);
     }
 	</script>
-	<script id="per-vertex-lighting-vs" type="x-shader/x-vertex">
-	 attribute vec3 aVertexPosition;
-    attribute vec3 aVertexNormal;
-    attribute vec2 aTextureCoord;
+	<script id="material-fs" type="x-shader/x-fragment">
+	  uniform sampler2D uSampler;
  
-    uniform mat4 uMVMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
+    varying vec4 vPosition;
+    varying vec2 vTextureCoord;
+    
+    uniform bool uUseTextures;
+    
+    vec4 light_fragment_main(in vec4 vPosition);
+    
+	  void material_fragment_main() {
+	    vec4 textureColor = uUseTextures ? texture2D(uSampler, vTextureCoord) : vec4(1.0);
+      vec4 lighting = light_fragment_main(vPosition);
+              
+	    gl_FragColor = vec4(textureColor.rgb * lighting.rgb, textureColor.a);
+	  }
+	
+	</script>
+	<script id="vertex-light-vs" type="x-shader/x-vertex">
+	  attribute vec3 aVertexNormal;
+	  
+	  uniform mat3 uNMatrix;
 		uniform mat4 uWMatrix;
  
     uniform vec3 uAmbientColor;
@@ -38,78 +80,59 @@
  
     uniform bool uUseLighting;
  
-    varying vec2 vTextureCoord;
     varying vec3 vLightWeighting;
  
-    void main(void) {
-        vec4 mvPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        gl_Position = uPMatrix * mvPosition;
-				vTextureCoord = aTextureCoord;
- 
-        if (!uUseLighting) {
+	  void light_vertex_main(in vec4 vPosition) {
+	    if (!uUseLighting) {
             vLightWeighting = vec3(1.0, 1.0, 1.0);
         } else {
 					vec4 mvLightLocation = uWMatrix * vec4(uPointLightingLocation, 1.0);
-					vec3 lightDirection = normalize(mvLightLocation.xyz - mvPosition.xyz);
+					vec3 lightDirection = normalize(mvLightLocation.xyz - vPosition.xyz);
 					
 					vec3 transformedNormal = uNMatrix * aVertexNormal;
 					float directionalLightWeighting = max(dot(transformedNormal, lightDirection), 0.0);
           vLightWeighting = uAmbientColor + uPointLightingColor * directionalLightWeighting;
         }
-    }
+	  } 
 	</script>
-	<script id="per-fragment-lighting-fs" type="x-shader/x-fragment">
-	#ifdef GL_ES
-    precision highp float;
-    #endif
- 
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-		varying vec4 vPosition;
+	<script id="vertex-light-fs" type="x-shader/x-fragment">
+	  varying vec3 vLightWeighting;
+	  
+	  vec4 light_fragment_main(in vec4 vPosition) {
+	    return vec4(vLightWeighting, 1.0);
+	  }
+	</script>
+	<script id="fragment-light-vs" type="x-shader/x-vertex">
+	  attribute vec3 aVertexNormal;
+	  
+	  uniform mat3 uNMatrix;
+			  
+	  varying vec3 vTransformedNormal;
 		
-    uniform sampler2D uSampler;
-		uniform mat4 uWMatrix;
+		void light_vertex_main(in vec4 vPosition) {
+	    vTransformedNormal = uNMatrix * aVertexNormal;  
+    }
+	
+	</script>
+	<script id="fragment-light-fs" type="x-shader/x-fragment">
+	  uniform mat4 uWMatrix;
 		uniform vec3 uAmbientColor;
  
     uniform vec3 uPointLightingLocation;
     uniform vec3 uPointLightingColor;
  
-    uniform bool uUseTextures;
- 
-    void main(void) {
-			vec3 lightWeighting;
-			vec4 mvLightLocation = uWMatrix * vec4(uPointLightingLocation, 1.0);
+	  varying vec3 vTransformedNormal;
+	  
+	  vec4 light_fragment_main(in vec4 vPosition) {
+	    vec4 mvLightLocation = uWMatrix * vec4(uPointLightingLocation, 1.0);
 			vec3 lightDirection = normalize(mvLightLocation.xyz - vPosition.xyz);
 			
 			float directionalLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);
-			lightWeighting = uAmbientColor + uPointLightingColor * directionalLightWeighting;
-				
-			vec4 textureColor = vec4(1.0, 1.0, 1.0, 1.0);
-			if (uUseTextures)
-				textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
-			gl_FragColor = vec4(textureColor.rgb * lightWeighting, textureColor.a);
-    }
+			return vec4(uAmbientColor + uPointLightingColor * directionalLightWeighting, 1.0);    
+	  }
 	</script>
-	<script id="per-fragment-lighting-vs" type="x-shader/x-vertex">
-	  attribute vec3 aVertexPosition;
-    attribute vec3 aVertexNormal;
-    attribute vec2 aTextureCoord;
- 
-    uniform mat4 uMVMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
-		
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-		varying vec4 vPosition;
- 
-    void main(void) {
-        vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        gl_Position = uPMatrix * vPosition;
-				vTextureCoord = aTextureCoord;
-				vTransformedNormal = uNMatrix * aVertexNormal;
-    }
-	</script>
+	
+	
 	<script type="text/javascript">
 		var gl = null;
 			
@@ -126,6 +149,11 @@
 		var cubeTexture;
 		
 		var engine = new Challenger();
+		
+		var meshFX;
+		var materialFX;
+		var innerSceneLightingFX;
+		var sceneLightingFX;
 		
 		function initTextures() {
 		  moonTexture = gl.createTexture();
@@ -442,14 +470,18 @@
 		}
 		
 		function initShaders() {
-			shaderProgram = createProgram("per-fragment-lighting-vs", "per-fragment-lighting-fs");
+			shaderProgram = createProgram(["mesh-vs", "mesh-fs", "material-vs", "material-fs", "fragment-light-vs", "fragment-light-fs"]);
 		}
 		
-		function createProgram(vertexShaderId, fragmentShaderId) {
-		  var vertexShader = getShader(gl, vertexShaderId);
-		  var fragmentShader = getShader(gl, fragmentShaderId);
-		  		  
-		  shaderProgram = engine.shaderProgramFactory.create([vertexShader,fragmentShader]); 
+		function createProgram(shadersIds) {
+		  var shaderList = [];
+		  for (var i = 0; i < shadersIds.length; i++)
+		  {
+		    var shader = getShader(gl, shadersIds[i]);
+		    shaderList.push(shader); 
+		  } 
+		  
+		  shaderProgram = engine.shaderProgramFactory.create(shaderList); 
 		  
 		  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram.obj, "aVertexPosition");
 		  gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
