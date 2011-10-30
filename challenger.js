@@ -4,6 +4,7 @@
 */
 function Challenger() {
 	this.shaderFactory = new ShaderFactory();
+	this.shaderProgramFactory = new ShaderProgramFactory();
 }
 
 /**
