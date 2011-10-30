@@ -35,7 +35,33 @@ function NodeFactory() {
 	Links WebGL program and gets locations for all uniforms.
 */
 function ShaderProgram(title, shaders) {
+	this.clean = function() {
+		gl.destroyProgram(this.obj);
+		this.uniforms = null;
+	}
+
+	this.name = name;
 	
+	// TODO: check dependencies
+	
+	// link program
+	this.obj = gl.createProgram();
+	for (var i = 0; i < shaders.length(); i++)	
+		gl.attachShader(this.obj, shaders[i].obj);
+	gl.linkProgram(this.obj);
+	
+	if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+		alert("Could not initialize shaders");
+		return
+	}
+	
+	// get uniforms locations
+	this.uniforms = {};
+	for (var shader in shaders) {
+		for (var parameter in shader.parameters) {
+			this.uniforms[parameter.name] = gl.getUniformLocation(this.obj, parameter.name);
+		}
+	}
 }
 
 /**
@@ -43,7 +69,43 @@ function ShaderProgram(title, shaders) {
 	Makes shader program from few shaders
 */
 function ShaderProgramFactory() {
+	function fullName(shaders) {
+		var name = "";
+		for (var i = 0; i < shaders.length(); i++)
+			name += shaders[i].name + "|";
+		return name;
+	}
 	
+	this.cache = {};
+	
+	/**
+		Create Program.
+		Allows create program with unique name only once.
+		\return Program object 
+	*/
+	this.create = function(shaders) {
+		var programName = fullName(shaders);
+	
+		if (this.cache[programName])
+		{
+			return this.cache[programName]
+		}
+		else
+		{
+			program = new ShaderProgram(programName, shaders);
+			this.cache[programName] = program;
+			return program;
+		}
+	}	
+	
+	/**
+		Free program object.
+		Destroys WebGL Program object and removes from cache
+	*/
+	this.free = function(program) {
+		program.clean();
+		this.cache[program.title] = null;
+	}	
 }
 
 /**
