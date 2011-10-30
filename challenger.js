@@ -45,14 +45,43 @@ function ShaderProgram(title, shaders) {
 		gl.useProgram(this.obj);
 	}
 	
+	this.compile = function(glsl, type) {
+	  var shader = gl.createShader(type);
+    gl.shaderSource(shader, glsl);
+    gl.compileShader(shader);
+  
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+	    alert(gl.getShaderInfoLog(shader));
+	    return;
+    }
+    
+    return shader;
+	}
+	
 	this.name = name;
 	
 	// TODO: check dependencies
 	
 	// link program
+	var fullVertexGLSL = "";
+	var fullFragmentGLSL = "";
 	this.obj = gl.createProgram();
 	for (var i = 0; i < shaders.length; i++)	
-		gl.attachShader(this.obj, shaders[i].obj);
+	{
+	  var shaderSrc = shaders[i];
+	  if (shaderSrc.type == gl.VERTEX_SHADER)
+	    fullVertexGLSL += shaderSrc.glsl;
+	  else
+	   fullFragmentGLSL += shaderSrc.glsl;   
+	}
+	
+	// compile shader
+  var vertexShader = this.compile(fullVertexGLSL, gl.VERTEX_SHADER);
+  var fragmentShader = this.compile(fullFragmentGLSL, gl.FRAGMENT_SHADER);  
+
+	gl.attachShader(this.obj, vertexShader);
+	gl.attachShader(this.obj, fragmentShader);
+	
 	gl.linkProgram(this.obj);
 	
 	if (!gl.getProgramParameter(this.obj, gl.LINK_STATUS)) {
@@ -262,17 +291,20 @@ function Shader(source) {
 
 	this.name = source.name;
 	this.dependency = source.dependency;
+	this.glsl = source.glsl;
+	this.type = source.type == "vertex" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER;
 	
 	// compile shader
-	this.obj = gl.createShader(source.type == "vertex" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER);
+	// Moved into ShaderProgram
+	/*this.obj = gl.createShader(source.type == "vertex" ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER);
 	
 	gl.shaderSource(this.obj, source.glsl);
 	gl.compileShader(this.obj);
 
 	if (!gl.getShaderParameter(this.obj, gl.COMPILE_STATUS)) {
-		alert(gl.getShaderInfoLog(shader));
+		alert(this.name + ": " + gl.getShaderInfoLog(this.obj));
 		return;
-	}
+	}*/
 	
 	// parse uniform and connect with set functions
 	var gen_uniform_regexp = /uniform\s+\w+\s+\w+[^;]*/ig;
@@ -280,21 +312,24 @@ function Shader(source) {
 	var uniforms = source.glsl.match(gen_uniform_regexp);
 	this.parameters = [];
 	
-	for (var i = 0; i < uniforms.length; i++) {
-		var uniform_src = uniforms[i];
+	if (uniforms)
+	{
+	  for (var i = 0; i < uniforms.length; i++) {
+		  var uniform_src = uniforms[i];
 		
-		// 1 - uniform type
-		// 2 - uniform name
-		// 4 - uniform default
-		var values = uniform_src.match(uniform_regexp)
+		  // 1 - uniform type
+		  // 2 - uniform name
+		  // 4 - uniform default
+		  var values = uniform_src.match(uniform_regexp)
 		
-		var parameter = new Object();
-		parameter.name = values[2];
-		parameter.setter = this.setter_for(values[1]);
+		  var parameter = new Object();
+		  parameter.name = values[2];
+		  parameter.setter = this.setter_for(values[1]);
 		
-		//TODO: process uniform default value
+		  //TODO: process uniform default value
 			
-		this.parameters.push(parameter);
+		  this.parameters.push(parameter);
+	  }
 	}
 } 
 
