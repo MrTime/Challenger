@@ -41,6 +41,10 @@ function ShaderProgram(title, shaders) {
 		this.uniforms = null;
 	}
 
+	this.use = function() {
+		gl.useProgram(this.obj);
+	}
+	
 	this.name = name;
 	
 	// TODO: check dependencies
