@@ -237,7 +237,7 @@ function Shader(source) {
 	}
 	
 	// determinate set function for specific argument type
-	function setter_for(typename) {
+	this.setter_for = function(typename) {
 		switch (typename) {
 			case "float":	return gl.uniform1f; break;
 			case "vec2":	return gl.uniform2fv; break;
@@ -290,7 +290,7 @@ function Shader(source) {
 		
 		var parameter = new Object();
 		parameter.name = values[2];
-		parameter.setter = setter_for(values[1]);
+		parameter.setter = this.setter_for(values[1]);
 		
 		//TODO: process uniform default value
 			
