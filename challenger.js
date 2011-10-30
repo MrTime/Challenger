@@ -177,7 +177,30 @@ function TextureFactory() {
 *	Container for shader variables values. 
 */
 function FX(source) {
+	this.title = source.name;		
+	this.parameters = {};			//< parameters hash, where key - parameter name, value - {:value, :value_func, :set}, where set - function that set uniform value (kind of function (name, value))
+	this.shaders = {};				//< vertex,fragment shaders connected with this FX
 	
+	// load all shaders for this FX
+	for (var shaderName in source.shaders) {
+		var shader = ShaderFactory.create(source.shaders[shaderName]);
+		// add shader parameters into FX pameters
+		parameters = parameters.concat(shader.parameters);
+		shaders[shaderName] = shader;
+	}
+		
+	/** set FX uniforms
+	*	\param program object that contain current program with parameters uniforms for it
+	*/
+	this.apply = function(program) {
+		for (var paramName in parameters) {
+			var param = this.parameters[paramName];
+			if (param.value)
+				param.setter(program.uniforms[paramName], param.value);
+			else
+				param.setter(program.uniforms[paramName], param.valueFunc());
+		}
+	}
 }
 
 /**
