@@ -1,8 +1,3 @@
-class Challenger
-  constructor: ->
-    @shaderFactory = new ShaderFactory
-    @shaderProgramFactory = new ShaderProgramFactory
-    
 class ResourceFactory
   constructor: ->
     @cache = {}
@@ -12,7 +7,7 @@ class ResourceFactory
     if @cache[full_name]
       @cache[full_name]
     else
-      @cache[full_name] = @create_new(source)  
+      @cache[full_name] = @create_new(source)
       
     
   free: (instance) ->
@@ -44,24 +39,24 @@ class Shader
         # 4 - uniform default
         values = uniform_src.match(uniform_regexp)
         
-        parameters = 
+        parameters =
           name: values[2]
           setter: @setter_for(values[1])
         
         @parameters.push parameters
         
   clean: ->
-    gl.destroyShader(this.obj);
+    gl.destroyShader(this.obj)
     @parameters = []
     
-  uniformMatrix2: (location, value) -> 
-    gl.uniformMatrix2fv(location, (value.transpose == true), value);
+  uniformMatrix2: (location, value) ->
+    gl.uniformMatrix2fv(location, (value.transpose == true), value)
   
-  uniformMatrix3: (location, value) -> 
-    gl.uniformMatrix3fv(location, (value.transpose == true), value);
+  uniformMatrix3: (location, value) ->
+    gl.uniformMatrix3fv(location, (value.transpose == true), value)
   
-  uniformMatrix4: (location, value) -> 
-    gl.uniformMatrix4fv(location, (value.transpose == true), value);
+  uniformMatrix4: (location, value) ->
+    gl.uniformMatrix4fv(location, (value.transpose == true), value)
     
   setter_for: (typename) ->
     switch typename
@@ -78,11 +73,11 @@ class Shader
       when "mat4" then @uniformMatrix4
       else null
       
-class ShaderFactory extends ResourceFactory  
+class ShaderFactory extends ResourceFactory
   constructor: ->
     super
  
-  create_new: (source) -> new Shader(source)     
+  create_new: (source) -> new Shader(source)
       
 class ShaderProgram
   constructor: (@name, shaders) ->
@@ -96,14 +91,14 @@ class ShaderProgram
     vertexShader = @compile(fullVertexGLSL, gl.VERTEX_SHADER)
     fragmentShader = @compile(fullFragmentGLSL, gl.FRAGMENT_SHADER)
     
-    gl.attachShader(@obj, vertexShader);
-    gl.attachShader(@obj, fragmentShader);
+    gl.attachShader(@obj, vertexShader)
+    gl.attachShader(@obj, fragmentShader)
     gl.linkProgram(@obj)
     
-    unless gl.getProgramParameter(@obj, gl.LINK_STATUS) 
-      alert("Could not initialize shaders");
+    unless gl.getProgramParameter(@obj, gl.LINK_STATUS)
+      alert("Could not initialize shaders")
     
-    @use();
+    @use()
 
     # get uniforms locations
     @uniforms = {}
@@ -127,17 +122,17 @@ class ShaderProgram
       
     shader
       
-class ShaderProgramFactory extends ResourceFactory  
+class ShaderProgramFactory extends ResourceFactory
   constructor: ->
     super
  
   instance_name: (source) ->
     name = ""
-    for shader in source 
+    for shader in source
       name += shader.name + "|"
-    name   
+    name
  
-  create_new: (source) -> new ShaderProgram(@instance_name(source), source)           
+  create_new: (source) -> new ShaderProgram(@instance_name(source), source)
      
 class FX
   constructor: (source) ->
@@ -148,8 +143,15 @@ class FX
     for shaderName, shaderSource in source.shaders
       shader = ShaderFactory.create(shaderSource)
       parameters = parameters.concat(shader.parameters)
-      @shaders[shaderName] = shader 
+      @shaders[shaderName] = shader
       
   apply: (program) ->
     for parameterName, parameter in parameters
-        parameter.setter(program.uniforms[parameterName], param.value) 
+        parameter.setter(program.uniforms[parameterName], param.value)
+
+
+class Challenger
+  constructor: ->
+    @shaderFactory = new ShaderFactory
+    @shaderProgramFactory = new ShaderProgramFactory
+    

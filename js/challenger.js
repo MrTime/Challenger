@@ -1,16 +1,6 @@
-var Challenger, FX, ResourceFactory, Shader, ShaderFactory, ShaderProgram, ShaderProgramFactory;
-var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
-
-Challenger = (function() {
-
-  function Challenger() {
-    this.shaderFactory = new ShaderFactory;
-    this.shaderProgramFactory = new ShaderProgramFactory;
-  }
-
-  return Challenger;
-
-})();
+var Challenger, FX, ResourceFactory, Shader, ShaderFactory, ShaderProgram, ShaderProgramFactory,
+  __hasProp = Object.prototype.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
 ResourceFactory = (function() {
 
@@ -253,5 +243,16 @@ FX = (function() {
   };
 
   return FX;
+
+})();
+
+Challenger = (function() {
+
+  function Challenger() {
+    this.shaderFactory = new ShaderFactory;
+    this.shaderProgramFactory = new ShaderProgramFactory;
+  }
+
+  return Challenger;
 
 })();
