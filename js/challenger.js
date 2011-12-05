@@ -226,25 +226,34 @@ ShaderProgramFactory = (function() {
 FX = (function() {
 
   function FX(source) {
-    var shader, shaderName, shaderSource, _len, _ref;
+    var parameter, shader, shaderName, shaderSource, _i, _len, _len2, _ref, _ref2;
     this.title = source.name;
-    this.parameters = [];
+    this.parameters = {};
     this.shaders = [];
     _ref = source.shaders;
     for (shaderName = 0, _len = _ref.length; shaderName < _len; shaderName++) {
       shaderSource = _ref[shaderName];
       shader = engine.shaderFactory.create(shaderSource);
-      this.parameters = this.parameters.concat(shader.parameters);
+      _ref2 = shader.parameters;
+      for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
+        parameter = _ref2[_i];
+        this.parameters[parameter.name] = parameter;
+      }
       this.shaders.push(shader);
     }
   }
 
   FX.prototype.apply = function(program) {
-    var parameter, parameterName, _len, _results;
+    var parameter, parameterName, _ref, _results;
+    _ref = this.parameters;
     _results = [];
-    for (parameter = 0, _len = parameters.length; parameter < _len; parameter++) {
-      parameterName = parameters[parameter];
-      _results.push(parameter.setter(program.uniforms[parameterName], param.value));
+    for (parameterName in _ref) {
+      parameter = _ref[parameterName];
+      if (parameter.value || parameter.value_func) {
+        _results.push(parameter.setter(program.uniforms[parameterName], (parameter.value ? parameter.value : parameter.value_func())));
+      } else {
+        _results.push(void 0);
+      }
     }
     return _results;
   };

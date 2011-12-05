@@ -139,17 +139,18 @@ class ShaderProgramFactory extends ResourceFactory
 class FX
   constructor: (source) ->
     @title = source.name
-    @parameters = []
+    @parameters = {}
     @shaders = []
     
     for shaderSource, shaderName in source.shaders
       shader = engine.shaderFactory.create(shaderSource)
-      @parameters = @parameters.concat(shader.parameters)
+      @parameters[parameter.name] = parameter for parameter in shader.parameters
       @shaders.push(shader)
       
   apply: (program) ->
-    for parameterName, parameter in parameters
-        parameter.setter(program.uniforms[parameterName], param.value)
+    for parameterName, parameter of @parameters
+      if parameter.value or parameter.value_func # cleanup later
+        parameter.setter(program.uniforms[parameterName], (if parameter.value then parameter.value else parameter.value_func()))
 
 class FXFactory extends ResourceFactory
   constructor: ->
