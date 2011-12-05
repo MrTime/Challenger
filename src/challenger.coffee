@@ -80,13 +80,14 @@ class ShaderFactory extends ResourceFactory
   create_new: (source) -> new Shader(source)
       
 class ShaderProgram
-  constructor: (@name, shaders) ->
+  constructor: (@name, fx) ->
     fullVertexGLSL = ""
     fullFragmentGLSL = ""
     @obj = gl.createProgram()
-    for shaderSource in shaders
-      if shaderSource.type == gl.VERTEX_SHADER then fullVertexGLSL += shaderSource.glsl
-      else fullFragmentGLSL += shaderSource.glsl
+    for fxSource in fx
+      for shaderSource in fxSource.shaders
+        if shaderSource.type == gl.VERTEX_SHADER then fullVertexGLSL += shaderSource.glsl
+        else fullFragmentGLSL += shaderSource.glsl
     
     vertexShader = @compile(fullVertexGLSL, gl.VERTEX_SHADER)
     fragmentShader = @compile(fullFragmentGLSL, gl.FRAGMENT_SHADER)
@@ -102,9 +103,10 @@ class ShaderProgram
 
     # get uniforms locations
     @uniforms = {}
-    for shader in shaders
-      for parameter in shader.parameters
-        @uniforms[parameter.name] = gl.getUniformLocation(@obj, parameter.name)
+    for fxSource in fx
+      for shaderSource in fxSource.shaders
+        for parameter in shaderSource.parameters
+          @uniforms[parameter.name] = gl.getUniformLocation(@obj, parameter.name)
     
   clean: ->
     gl.destroyProgram(@obj)
@@ -137,21 +139,32 @@ class ShaderProgramFactory extends ResourceFactory
 class FX
   constructor: (source) ->
     @title = source.name
-    @parameters = {}
-    @shaders = {}
+    @parameters = []
+    @shaders = []
     
-    for shaderName, shaderSource in source.shaders
-      shader = ShaderFactory.create(shaderSource)
-      parameters = parameters.concat(shader.parameters)
-      @shaders[shaderName] = shader
+    for shaderSource, shaderName in source.shaders
+      shader = engine.shaderFactory.create(shaderSource)
+      @parameters = @parameters.concat(shader.parameters)
+      @shaders.push(shader)
       
   apply: (program) ->
     for parameterName, parameter in parameters
         parameter.setter(program.uniforms[parameterName], param.value)
 
+class FXFactory extends ResourceFactory
+  constructor: ->
+    super
+ 
+  instance_name: (source) ->
+    name = ""
+    for shader in source.shaders
+      name += shader.name + "|"
+    name
+ 
+  create_new: (source) -> new FX(source)
 
 class Challenger
   constructor: ->
     @shaderFactory = new ShaderFactory
     @shaderProgramFactory = new ShaderProgramFactory
-    
+    @FXFactory = new FXFactory

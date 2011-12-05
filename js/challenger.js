@@ -1,6 +1,5 @@
-var Challenger, FX, ResourceFactory, Shader, ShaderFactory, ShaderProgram, ShaderProgramFactory,
-  __hasProp = Object.prototype.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+var Challenger, FX, FXFactory, ResourceFactory, Shader, ShaderFactory, ShaderProgram, ShaderProgramFactory;
+var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
 ResourceFactory = (function() {
 
@@ -132,18 +131,22 @@ ShaderFactory = (function() {
 
 ShaderProgram = (function() {
 
-  function ShaderProgram(name, shaders) {
-    var fragmentShader, fullFragmentGLSL, fullVertexGLSL, parameter, shader, shaderSource, vertexShader, _i, _j, _k, _len, _len2, _len3, _ref;
+  function ShaderProgram(name, fx) {
+    var fragmentShader, fullFragmentGLSL, fullVertexGLSL, fxSource, parameter, shaderSource, vertexShader, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _m, _ref, _ref2, _ref3;
     this.name = name;
     fullVertexGLSL = "";
     fullFragmentGLSL = "";
     this.obj = gl.createProgram();
-    for (_i = 0, _len = shaders.length; _i < _len; _i++) {
-      shaderSource = shaders[_i];
-      if (shaderSource.type === gl.VERTEX_SHADER) {
-        fullVertexGLSL += shaderSource.glsl;
-      } else {
-        fullFragmentGLSL += shaderSource.glsl;
+    for (_i = 0, _len = fx.length; _i < _len; _i++) {
+      fxSource = fx[_i];
+      _ref = fxSource.shaders;
+      for (_j = 0, _len2 = _ref.length; _j < _len2; _j++) {
+        shaderSource = _ref[_j];
+        if (shaderSource.type === gl.VERTEX_SHADER) {
+          fullVertexGLSL += shaderSource.glsl;
+        } else {
+          fullFragmentGLSL += shaderSource.glsl;
+        }
       }
     }
     vertexShader = this.compile(fullVertexGLSL, gl.VERTEX_SHADER);
@@ -156,12 +159,16 @@ ShaderProgram = (function() {
     }
     this.use();
     this.uniforms = {};
-    for (_j = 0, _len2 = shaders.length; _j < _len2; _j++) {
-      shader = shaders[_j];
-      _ref = shader.parameters;
-      for (_k = 0, _len3 = _ref.length; _k < _len3; _k++) {
-        parameter = _ref[_k];
-        this.uniforms[parameter.name] = gl.getUniformLocation(this.obj, parameter.name);
+    for (_k = 0, _len3 = fx.length; _k < _len3; _k++) {
+      fxSource = fx[_k];
+      _ref2 = fxSource.shaders;
+      for (_l = 0, _len4 = _ref2.length; _l < _len4; _l++) {
+        shaderSource = _ref2[_l];
+        _ref3 = shaderSource.parameters;
+        for (_m = 0, _len5 = _ref3.length; _m < _len5; _m++) {
+          parameter = _ref3[_m];
+          this.uniforms[parameter.name] = gl.getUniformLocation(this.obj, parameter.name);
+        }
       }
     }
   }
@@ -219,16 +226,16 @@ ShaderProgramFactory = (function() {
 FX = (function() {
 
   function FX(source) {
-    var parameters, shader, shaderName, shaderSource, _len, _ref;
+    var shader, shaderName, shaderSource, _len, _ref;
     this.title = source.name;
-    this.parameters = {};
-    this.shaders = {};
+    this.parameters = [];
+    this.shaders = [];
     _ref = source.shaders;
-    for (shaderSource = 0, _len = _ref.length; shaderSource < _len; shaderSource++) {
-      shaderName = _ref[shaderSource];
-      shader = ShaderFactory.create(shaderSource);
-      parameters = parameters.concat(shader.parameters);
-      this.shaders[shaderName] = shader;
+    for (shaderName = 0, _len = _ref.length; shaderName < _len; shaderName++) {
+      shaderSource = _ref[shaderName];
+      shader = engine.shaderFactory.create(shaderSource);
+      this.parameters = this.parameters.concat(shader.parameters);
+      this.shaders.push(shader);
     }
   }
 
@@ -246,11 +253,39 @@ FX = (function() {
 
 })();
 
+FXFactory = (function() {
+
+  __extends(FXFactory, ResourceFactory);
+
+  function FXFactory() {
+    FXFactory.__super__.constructor.apply(this, arguments);
+  }
+
+  FXFactory.prototype.instance_name = function(source) {
+    var name, shader, _i, _len, _ref;
+    name = "";
+    _ref = source.shaders;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      shader = _ref[_i];
+      name += shader.name + "|";
+    }
+    return name;
+  };
+
+  FXFactory.prototype.create_new = function(source) {
+    return new FX(source);
+  };
+
+  return FXFactory;
+
+})();
+
 Challenger = (function() {
 
   function Challenger() {
     this.shaderFactory = new ShaderFactory;
     this.shaderProgramFactory = new ShaderProgramFactory;
+    this.FXFactory = new FXFactory;
   }
 
   return Challenger;
