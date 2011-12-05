@@ -439,7 +439,7 @@ function degToRad(degrees) {
     return degrees * Math.PI / 100;
 }
 
-function getShader(gl, id) {
+function getShader(id) {
     var shaderScript = document.getElementById(id);
 
     if (!shaderScript) {
@@ -464,23 +464,41 @@ function getShader(gl, id) {
         source.type = "vertex";
     }
 
-    var shader = engine.shaderFactory.create(source);
-
-    return shader;
+    return source;
 }
 
 function initShaders() {
-    shaderProgram = createProgram(["mesh-vs", "mesh-fs", "material-vs", "material-fs", "fragment-light-vs", "fragment-light-fs"]);
+    meshFX = createFX(["mesh-vs", "mesh-fs"])
+    /*meshFX.parameters.uPMatrix.value = pMatrix;
+    meshFX.parameters.uMVMatrix.value = mvMatrix;	    
+    meshFX.parameters.uWMatrix.value = wMatrix;	    
+    meshFX.parameters.uNMatrix.value = function() {
+       var normalMatrix = mat3.create();
+       mat4.toInverseMat3(mvMatrix, normalMatrix);
+       mat3.transpose(normalMatrix);
+       return normalMatrix;
+    };*/
+
+    materialFX = createFX(["material-vs", "material-fs"])
+    lightingFX = createFX(["fragment-light-vs", "fragment-light-fs"])
+    shaderProgram = createProgram([meshFX, materialFX, lightingFX]);
 }
 
-function createProgram(shadersIds) {
+
+function createFX(shadersIds) {
+    var source = {}
+    source.shaders = []
     var shaderList = [];
     for (var i = 0; i < shadersIds.length; i++) {
-        var shader = getShader(gl, shadersIds[i]);
-        shaderList.push(shader);
+        var shader = getShader(shadersIds[i]);
+        source.shaders.push(shader);
     }
 
-    shaderProgram = engine.shaderProgramFactory.create(shaderList);
+    return engine.FXFactory.create(source);
+}
+
+function createProgram(fx) {
+    shaderProgram = engine.shaderProgramFactory.create(fx);
 
     shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram.obj, "aVertexPosition");
     gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
