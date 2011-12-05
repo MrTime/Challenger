@@ -154,6 +154,7 @@ var meshFX;
 var materialFX;
 var innerSceneLightingFX;
 var sceneLightingFX;
+var lightingFX;
 
 function initTextures() {
     moonTexture = gl.createTexture();
@@ -468,19 +469,27 @@ function getShader(id) {
 }
 
 function initShaders() {
-    meshFX = createFX(["mesh-vs", "mesh-fs"])
-    /*meshFX.parameters.uPMatrix.value = pMatrix;
-    meshFX.parameters.uMVMatrix.value = mvMatrix;	    
-    meshFX.parameters.uWMatrix.value = wMatrix;	    
-    meshFX.parameters.uNMatrix.value = function() {
+    meshFX = createFX(["mesh-vs", "mesh-fs"]);
+    meshFX.parameters.uPMatrix.value_func = function() {
+    	return pMatrix;
+    }
+    meshFX.parameters.uMVMatrix.value_func = function() {
+	return mvMatrix;
+    }	    
+
+    materialFX = createFX(["material-vs", "material-fs"])
+
+    lightingFX = createFX(["fragment-light-vs", "fragment-light-fs"])
+    lightingFX.parameters.uWMatrix.value_func = function() { 
+	    return wMatrix; 
+    }	    
+    lightingFX.parameters.uNMatrix.value_func = function() {
        var normalMatrix = mat3.create();
        mat4.toInverseMat3(mvMatrix, normalMatrix);
        mat3.transpose(normalMatrix);
        return normalMatrix;
-    };*/
+    };
 
-    materialFX = createFX(["material-vs", "material-fs"])
-    lightingFX = createFX(["fragment-light-vs", "fragment-light-fs"])
     shaderProgram = createProgram([meshFX, materialFX, lightingFX]);
 }
 
@@ -592,15 +601,9 @@ function webGLStart() {
 }
 
 function setMatrixUniforms() {
-    gl.uniformMatrix4fv(shaderProgram.uniforms.uPMatrix, false, pMatrix);
-    gl.uniformMatrix4fv(shaderProgram.uniforms.uMVMatrix, false, mvMatrix);
-    gl.uniformMatrix4fv(shaderProgram.uniforms.uWMatrix, false, wMatrix);
-
-    var normalMatrix = mat3.create();
-    mat4.toInverseMat3(mvMatrix, normalMatrix);
-    mat3.transpose(normalMatrix);
-    gl.uniformMatrix3fv(shaderProgram.uniforms.uNMatrix, false, normalMatrix);
-}
+    meshFX.apply(shaderProgram);
+    lightingFX.apply(shaderProgram);    
+} 
 
 function drawModel(vertexBuffer, vertexIndexBuffer, texture) {
     if (vertexBuffer == null || vertexIndexBuffer == null)
