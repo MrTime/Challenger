@@ -83,16 +83,16 @@ WebGL lesson 11
     varying vec3 vLightWeighting;
 
     void light_vertex_main(in vec4 vPosition) {
-        if (!uUseLighting) {
-            vLightWeighting = vec3(1.0, 1.0, 1.0);
-        } else {
+        //if (!uUseLighting) {
+        //    vLightWeighting = vec3(1.0, 1.0, 1.0);
+        //} else {
             vec4 mvLightLocation = uWMatrix * vec4(uPointLightingLocation, 1.0);
             vec3 lightDirection = normalize(mvLightLocation.xyz - vPosition.xyz);
 
             vec3 transformedNormal = uNMatrix * aVertexNormal;
             float directionalLightWeighting = max(dot(transformedNormal, lightDirection), 0.0);
             vLightWeighting = uAmbientColor + uPointLightingColor * directionalLightWeighting;
-        }
+        //}
     }
 </script>
 <script id="vertex-light-fs" type="x-shader/x-fragment">
@@ -152,8 +152,9 @@ var engine = new Challenger();
 
 var meshFX;
 var materialFX;
+var laptopMaterialFX;
+var laptopScreenMaterialFX;
 var innerSceneLightingFX;
-var sceneLightingFX;
 var lightingFX;
 
 function initTextures() {
@@ -468,6 +469,13 @@ function getShader(id) {
     return source;
 }
 
+function getNormalMatrix() {
+  var normalMatrix = mat3.create();
+  mat4.toInverseMat3(mvMatrix, normalMatrix);
+  mat3.transpose(normalMatrix);
+  return normalMatrix;
+}
+
 function initShaders() {
     meshFX = createFX(["mesh-vs", "mesh-fs"]);
     meshFX.parameters.uPMatrix.value_func = function() {
@@ -478,25 +486,42 @@ function initShaders() {
     }	    
 
     materialFX = createFX(["material-vs", "material-fs"])
+    materialFX.parameters.uSampler.value = 0;
+    materialFX.parameters.uUseTextures.value = true;
+
+    laptopMaterialFX = createFX(["material-vs", "material-fs"])
+    laptopMaterialFX.parameters.uSampler.value = 0;
+    laptopMaterialFX.parameters.uUseTextures.value = false;
+
+    laptopScreenMaterialFX = createFX(["material-vs", "material-fs"])
+    laptopScreenMaterialFX.parameters.uSampler.value = 0;
+    laptopScreenMaterialFX.parameters.uUseTextures.value = true;
+
+    innerSceneLightingFX = createFX(["fragment-light-vs", "fragment-light-fs"])
+    innerSceneLightingFX.parameters.uWMatrix.value_func = function() {
+    	return wMatrix;
+    };
+    innerSceneLightingFX.parameters.uNMatrix.value_func = getNormalMatrix;
+    innerSceneLightingFX.parameters.uAmbientColor.value = [0.1, 0.1, 0.1];
+    innerSceneLightingFX.parameters.uPointLightingLocation.value = [0.0, 0.0, 0.0]; 
+    innerSceneLightingFX.parameters.uPointLightingColor.value = [1.0, 1.0, 1.0]; 
 
     lightingFX = createFX(["fragment-light-vs", "fragment-light-fs"])
-    lightingFX.parameters.uWMatrix.value_func = function() { 
-	    return wMatrix; 
-    }	    
-    lightingFX.parameters.uNMatrix.value_func = function() {
-       var normalMatrix = mat3.create();
-       mat4.toInverseMat3(mvMatrix, normalMatrix);
-       mat3.transpose(normalMatrix);
-       return normalMatrix;
+    lightingFX.parameters.uWMatrix.value_func = function() {
+    	return wMatrix;
     };
+    lightingFX.parameters.uNMatrix.value_func = getNormalMatrix;
+    lightingFX.parameters.uAmbientColor.value = [0.1, 0.1, 0.1];
+    lightingFX.parameters.uPointLightingLocation.value = [0.0, 0.0, 20.0]; 
+    lightingFX.parameters.uPointLightingColor.value = [1.0, 1.0, 1.0]; 
 
     shaderProgram = createProgram([meshFX, materialFX, lightingFX]);
 }
 
 
 function createFX(shadersIds) {
-    var source = {}
-    source.shaders = []
+    var source = {};
+    source.shaders = [];
     var shaderList = [];
     for (var i = 0; i < shadersIds.length; i++) {
         var shader = getShader(shadersIds[i]);
@@ -602,7 +627,6 @@ function webGLStart() {
 
 function setMatrixUniforms() {
     meshFX.apply(shaderProgram);
-    lightingFX.apply(shaderProgram);    
 } 
 
 function drawModel(vertexBuffer, vertexIndexBuffer, texture) {
@@ -612,10 +636,6 @@ function drawModel(vertexBuffer, vertexIndexBuffer, texture) {
     if (texture) {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(shaderProgram.uniforms.uSampler, 0);
-        gl.uniform1i(shaderProgram.uniforms.uUseTextures, true);
-    } else {
-        gl.uniform1i(shaderProgram.uniforms.uUseTextures, false);
     }
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -639,14 +659,13 @@ function drawSceneOnLaptopScreen() {
     mat4.translate(mvMatrix, [0.0, 0.0, -20.0]);
     wMatrix = mat4.create(mvMatrix);
 
-    gl.uniform3f(shaderProgram.uniforms.uAmbientColor, 0.1, 0.1, 0.1);
-    gl.uniform3f(shaderProgram.uniforms.uPointLightingLocation, 0.0, 0.0, 0.0);
-    gl.uniform3fv(shaderProgram.uniforms.uPointLightingColor, [1.0,1.0,1.0]);
+    materialFX.apply(shaderProgram);
 
     // draw cube
     mvPushMatrix();
     mat4.rotate(mvMatrix, degToRad(cubeAngle), [0.0, 1.0, 0.0]);
     mat4.translate(mvMatrix, [5.0, 0.0, 0.0]);
+    innerSceneLightingFX.apply(shaderProgram);    
     drawModel(cubeVertexBuffer, cubeVertexIndexBuffer, cubeTexture);
     mvPopMatrix();
 
@@ -654,6 +673,7 @@ function drawSceneOnLaptopScreen() {
     mvPushMatrix();
     mat4.rotate(mvMatrix, degToRad(moonAngle), [0.0, 1.0, 0.0]);
     mat4.translate(mvMatrix, [5.0, 0.0, 0.0]);
+    innerSceneLightingFX.apply(shaderProgram);    
     drawModel(moonVertexBuffer, moonVertexIndexBuffer, moonTexture);
     mvPopMatrix();
 
@@ -682,15 +702,12 @@ function drawScene() {
 
     wMatrix = mat4.create(mvMatrix);
 
-    gl.uniform3f(shaderProgram.uniforms.uAmbientColor, 0.1, 0.1, 0.1);
-    gl.uniform3f(shaderProgram.uniforms.uPointLightingLocation, 0.0, 0.0, 20.0);
-    gl.uniform3fv(shaderProgram.uniforms.uPointLightingColor, [1.0,1.0,1.0]);
+    lightingFX.apply(shaderProgram);
+    laptopMaterialFX.apply(shaderProgram);
 
     drawModel(laptopVertexBuffer, laptopVertexIndexBuffer, null);
 
-    gl.uniform3f(shaderProgram.uniforms.uAmbientColor, 0.3, 0.3, 0.3);
-    gl.uniform3f(shaderProgram.uniforms.uPointLightingLocation, 0.0, 0.0, 0.0);
-    gl.uniform3fv(shaderProgram.uniforms.uPointLightingColor, [1.0,1.0,1.0]);
+    materialFX.apply(shaderProgram);
 
     //drawModel(laptopScreenVertexBuffer, laptopScreenVertexIndexBuffer, moonTexture);
     gl.activeTexture(gl.TEXTURE0);
@@ -702,6 +719,7 @@ function drawScene() {
     gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, 3, gl.FLOAT, false, laptopScreenVertexBuffer.itemSize * Float32Array.BYTES_PER_ELEMENT, 5 * Float32Array.BYTES_PER_ELEMENT);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 3, gl.FLOAT, false, laptopScreenVertexBuffer.itemSize * Float32Array.BYTES_PER_ELEMENT, 0);
     setMatrixUniforms();
+    lightingFX.apply(shaderProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, laptopScreenVertexBuffer.numItems);
 
 }
