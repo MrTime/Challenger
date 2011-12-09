@@ -1,3 +1,14 @@
+clone = (obj) ->
+  if not obj? or typeof obj isnt 'object'
+    return obj
+
+  newInstance = new obj.constructor()
+
+  for key of obj
+    newInstance[key] = clone obj[key]
+
+  return newInstance
+  
 class ResourceFactory
   constructor: ->
     @cache = {}
@@ -64,7 +75,7 @@ class Shader
       when "vec2"  then gl.uniform2fv
       when "vec3"  then gl.uniform3fv
       when "vec4"  then gl.uniform4fv
-      when "sample2D","sampleCube","bool","int" then gl.uniform1i
+      when "sampler2D","samplerCube","bool","int" then gl.uniform1i
       when "bvec2","ivec2" then gl.uniform2iv
       when "bvec3","ivec3" then gl.uniform3iv
       when "bvec4","ivec4" then gl.uniform4iv
@@ -144,13 +155,18 @@ class FX
     
     for shaderSource, shaderName in source.shaders
       shader = engine.shaderFactory.create(shaderSource)
-      @parameters[parameter.name] = parameter for parameter in shader.parameters
+      @parameters[parameter.name] = clone(parameter) for parameter in shader.parameters
       @shaders.push(shader)
       
   apply: (program) ->
     for parameterName, parameter of @parameters
-      if parameter.value or parameter.value_func # cleanup later
-        parameter.setter(program.uniforms[parameterName], (if parameter.value then parameter.value else parameter.value_func()))
+      uniform = program.uniforms[parameterName]
+      value = parameter.value if parameter.value?
+      value = parameter.value_func() if parameter.value_func?
+      if (value?)
+        parameter.setter.call(gl, uniform, value)
+
+    return
 
 class FXFactory extends ResourceFactory
   constructor: ->
@@ -159,10 +175,10 @@ class FXFactory extends ResourceFactory
   instance_name: (source) ->
     name = ""
     for shader in source.shaders
-      name += shader.name + "|"
+      name += shader.name + "|" + @cache.length
     name
  
-  create_new: (source) -> new FX(source)
+  create: (source) -> new FX(source)
 
 class Challenger
   constructor: ->

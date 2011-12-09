@@ -1,5 +1,15 @@
-var Challenger, FX, FXFactory, ResourceFactory, Shader, ShaderFactory, ShaderProgram, ShaderProgramFactory;
+var Challenger, FX, FXFactory, ResourceFactory, Shader, ShaderFactory, ShaderProgram, ShaderProgramFactory, clone;
 var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+
+clone = function(obj) {
+  var key, newInstance;
+  if (!(obj != null) || typeof obj !== 'object') return obj;
+  newInstance = new obj.constructor();
+  for (key in obj) {
+    newInstance[key] = clone(obj[key]);
+  }
+  return newInstance;
+};
 
 ResourceFactory = (function() {
 
@@ -84,8 +94,8 @@ Shader = (function() {
         return gl.uniform3fv;
       case "vec4":
         return gl.uniform4fv;
-      case "sample2D":
-      case "sampleCube":
+      case "sampler2D":
+      case "samplerCube":
       case "bool":
       case "int":
         return gl.uniform1i;
@@ -237,25 +247,22 @@ FX = (function() {
       _ref2 = shader.parameters;
       for (_i = 0, _len2 = _ref2.length; _i < _len2; _i++) {
         parameter = _ref2[_i];
-        this.parameters[parameter.name] = parameter;
+        this.parameters[parameter.name] = clone(parameter);
       }
       this.shaders.push(shader);
     }
   }
 
   FX.prototype.apply = function(program) {
-    var parameter, parameterName, _ref, _results;
+    var parameter, parameterName, uniform, value, _ref;
     _ref = this.parameters;
-    _results = [];
     for (parameterName in _ref) {
       parameter = _ref[parameterName];
-      if (parameter.value || parameter.value_func) {
-        _results.push(parameter.setter(program.uniforms[parameterName], (parameter.value ? parameter.value : parameter.value_func())));
-      } else {
-        _results.push(void 0);
-      }
+      uniform = program.uniforms[parameterName];
+      if (parameter.value != null) value = parameter.value;
+      if (parameter.value_func != null) value = parameter.value_func();
+      if ((value != null)) parameter.setter.call(gl, uniform, value);
     }
-    return _results;
   };
 
   return FX;
@@ -276,12 +283,12 @@ FXFactory = (function() {
     _ref = source.shaders;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       shader = _ref[_i];
-      name += shader.name + "|";
+      name += shader.name + "|" + this.cache.length;
     }
     return name;
   };
 
-  FXFactory.prototype.create_new = function(source) {
+  FXFactory.prototype.create = function(source) {
     return new FX(source);
   };
 
