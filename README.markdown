@@ -12,8 +12,10 @@ Features
 * HTML5
 * Uniforms parsing from shader source, and auto getting their's locations
 * Universal Everything-Shader-Based architecture (FX class) (in development)
+* Sprockets
 
 Setup
 -----
 
-Configure nginx or Apache to use folder.
+    bundle install
+    rackup
