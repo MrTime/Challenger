@@ -363,19 +363,13 @@ function initTextureFramebuffer() {
     rttFramebuffer.width = 1024;
     rttFramebuffer.height = 1024;
 
-    rttTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.generateMipmap(gl.TEXTURE_2D);
-
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    rttTexture = engine.textureFactory.create({width:rttFramebuffer.width, height:rttFramebuffer.height});
 
     var renderBuffer = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, rttFramebuffer.width, rttFramebuffer.height);
 
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, rttTexture, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, rttTexture.texture, 0);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderBuffer);
 
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -653,8 +647,7 @@ function drawSceneOnLaptopScreen() {
     drawModel(moonVertexBuffer, moonVertexIndexBuffer, moonTexture);
     mvPopMatrix();
 
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-    gl.generateMipmap(gl.TEXTURE_2D);
+    rttTexture.generateMipmap();
     gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
@@ -687,7 +680,7 @@ function drawScene() {
 
     //drawModel(laptopScreenVertexBuffer, laptopScreenVertexIndexBuffer, moonTexture);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+    rttTexture.bind();
     gl.uniform1i(shaderProgram.uniforms.uSampler, 0);
     gl.uniform1i(shaderProgram.uniforms.uUseTextures, true);
     gl.bindBuffer(gl.ARRAY_BUFFER, laptopScreenVertexBuffer);
