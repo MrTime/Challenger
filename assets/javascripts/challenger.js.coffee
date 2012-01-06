@@ -37,11 +37,16 @@ class Shader
     @dependency = source.dependency
     @glsl = source.glsl
     @type = if (source.type == "vertex") then gl.VERTEX_SHADER else gl.FRAGMENT_SHADER
+    @parameters = []
+    @attributes = []
     
+    @parseUniforms(source.glsl)
+    @parseAttributes(source.glsl)
+    
+  parseUniforms: (src) ->
     gen_uniform_regexp = /uniform\s+\w+\s+\w+[^;]*/ig
     uniform_regexp = /uniform\s+(\w+)\s+(\w+)(\s+=\s+(.*))*/i
-    uniforms = source.glsl.match(gen_uniform_regexp)
-    @parameters = []
+    uniforms = src.match(gen_uniform_regexp)
     
     if uniforms
       for uniform_src in uniforms
@@ -55,7 +60,10 @@ class Shader
           setter: @setter_for(values[1])
         
         @parameters.push parameters
-        
+
+  parseAttributes: (src) ->
+    #TODO: parsing attributes
+
   clean: ->
     gl.destroyShader(this.obj)
     @parameters = []
