@@ -1,4 +1,5 @@
 require 'sprockets'
+require 'coffee-script'
 
 use Rack::CommonLogger
 
