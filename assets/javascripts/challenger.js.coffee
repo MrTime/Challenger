@@ -180,8 +180,44 @@ class FXFactory extends ResourceFactory
  
   create: (source) -> new FX(source)
 
+class Texture
+  constructor: (source) ->
+    @texture = gl.createTexture()
+    @bind
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+    
+    @load(source.url) if source.url?
+  clean: ->
+    #TODO: cleanup texture
+
+  bind: ->
+    gl.bindTexture(gl.TEXTURE_2D, @texture)
+
+  load: (url) ->
+    @image = new Image()
+    @image.texture = this
+    @image.onload = @onImageLoaded
+    @image.src = url
+    true
+
+  onImageLoaded: ->
+    this.texture.bind()
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this)
+    gl.generateMipmap(gl.TEXTURE_2D)
+    true
+
+class TextureFactory extends ResourceFactory
+  constructor: ->
+    super
+
+  instance_name: (source) ->  source.url
+  create: (source) -> new Texture(source)
+
 class Challenger
   constructor: ->
     @shaderFactory = new ShaderFactory
     @shaderProgramFactory = new ShaderProgramFactory
     @FXFactory = new FXFactory
+    @textureFactory = new TextureFactory
