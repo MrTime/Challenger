@@ -158,32 +158,8 @@ var innerSceneLightingFX;
 var lightingFX;
 
 function initTextures() {
-    moonTexture = gl.createTexture();
-    moonTexture.image = new Image();
-    moonTexture.image.onload = function() {
-        onTextureLoaded(moonTexture);
-    }
-
-    moonTexture.image.src = "moon.gif";
-
-    cubeTexture = gl.createTexture();
-    cubeTexture.image = new Image();
-    cubeTexture.image.onload = function() {
-        onTextureLoaded(cubeTexture);
-    }
-
-    cubeTexture.image.src = "crate.gif";
-}
-
-function onTextureLoaded(texture) {
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.generateMipmap(gl.TEXTURE_2D);
-
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    moonTexture = engine.textureFactory.create({url: "moon.gif"});
+    cubeTexture = engine.textureFactory.create({url: "crate.gif"});
 }
 
 var moonVertexBuffer;
@@ -635,7 +611,7 @@ function drawModel(vertexBuffer, vertexIndexBuffer, texture) {
 
     if (texture) {
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
+	texture.bind();
     }
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
