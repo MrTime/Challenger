@@ -7,12 +7,12 @@ class ResourceFactory
     if @cache[full_name]
       @cache[full_name]
     else
-      @cache[full_name] = @create_new(source)
+      instance = @create_new(source)
+      instance.resource_name = full_name
+      @cache[full_name] = instance
       
-    
   free: (instance) ->
-    instance.clean
-    @cache[instance.name] = null
+    @cache[instance.resource_name] = null
   
   instance_name: (source) ->
     source.name
